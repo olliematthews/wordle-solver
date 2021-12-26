@@ -4,7 +4,7 @@ import numpy as np
 from word_encoding import WordEncoding
 
 class WordleGame:
-    N_GUESSES = 6
+    N_GUESSES = 10
     def __init__(self, seed = None):
         if not seed is None:
             np.random.seed = seed
@@ -31,7 +31,7 @@ class WordleGame:
         
         for i in range(WordleGame.N_GUESSES):
             guess = guesser(letters_not_in_word, letters_in_word, letters_in_position)
-            print(guess)
+            # print(guess)
             assert guess in self.word_list
 
             if guess == word:
@@ -52,6 +52,20 @@ class WordleGame:
 def guesser_generator(dictionary_array, encoding):
     letter_occurance_array = np.max(dictionary_array, axis = 1)
     def guesser(letters_not_in_word, letters_in_word, letters_in_position):
+        def get_possibilities(els, mask_list, check_values, letter_occurance_array):
+            if len(els) == 0:
+                n_rel_words = np.sum(dictionary_array[:, mask_list] == check_values)
+                return n_rel_words
+            first_el = els.pop[0]
+            return get_possibilities
+            for el in inarray:
+                if el:
+
+            return get_possibilities
+        # def get_probs(letter_probs, n_words):
+        #     out_probs = np.zeros((2 ** len(letter_probs)))
+        #     for i in range(letter_probs):
+        #         out_probs[]
         nonlocal dictionary_array, encoding, letter_occurance_array
 
         keep_indexes = np.ones((dictionary_array.shape[0]), bool)
@@ -77,14 +91,24 @@ def guesser_generator(dictionary_array, encoding):
 
         n_words = dictionary_array.shape[0]
 
-        letter_in_word_scores = letter_occurance_totals ** 2 + (n_words - letter_occurance_totals) ** 2
+        letter_in_word_scores = letter_occurance_totals * (n_words - letter_occurance_totals)
 
         letter_placed_totals = np.sum(dictionary_array, axis = 0)
 
-        letter_placed_scores = letter_placed_totals ** 2 + (n_words - letter_placed_totals) ** 2
+        letter_placed_scores = letter_placed_totals * (n_words - letter_placed_totals) 
 
-        dictionary_scores = np.sum(letter_occurance_array * letter_in_word_scores[None, :], axis = -1)
-                            # + dictionary_array * letter_placed_scores[None, :, :]
+        dictionary_scores = np.sum(letter_occurance_array * letter_in_word_scores[None, :], axis = -1) \
+            + np.sum(dictionary_array * letter_placed_scores[None, :, :], axis = (1, 2))
+
+        for word in dictionary_array:
+            possibilities = []
+            letter_probs = letter_occurance_totals[np.nonzero(word)[0]]
+            probs = np.array
+            keep_indexes = np.ones((dictionary_array.shape[0]), bool)
+            for i, letter in enumerate(word):
+                prob = letter_occurance_totals[i] 
+
+
 
         return encoding.decode_onehot(dictionary_array[np.argmax(dictionary_scores)])
     return guesser
@@ -95,14 +119,17 @@ if __name__ == '__main__':
     with open('wordle_dictionary_array.p', 'rb') as fd:
         dictionary_array = pickle.load(fd)
 
-    wordle_game = WordleGame(seed = 0)
-
     alphabet = 'abcdefghijklmnopqrstuvwxyz'
     encoding = WordEncoding(alphabet)
+    results = []
 
-    guesser = guesser_generator(dictionary_array, encoding)
+    wordle_game = WordleGame(seed = 0)
 
-    # guesser = lambda x, y, z: 'hello'
+    for i in range(1000):
+        guesser = guesser_generator(dictionary_array, encoding)
 
-    print(wordle_game.sim(guesser))
+        res = wordle_game.sim(guesser)
+        results.append(res)
+    print(np.mean([r for r in results if not r is None]))
+    
 
