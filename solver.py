@@ -54,19 +54,21 @@ def guesser_generator(dictionary_array, encoding):
     def guesser(letters_not_in_word, letters_in_word, letters_in_position):
         def get_possibilities(els, mask_list, check_values, letter_occurance_array):
             if len(els) == 0:
-                n_rel_words = np.sum(dictionary_array[:, mask_list] == check_values)
-                return n_rel_words
-            first_el = els.pop[0]
-            return get_possibilities
-            for el in inarray:
-                if el:
+                n_rel_words = np.sum(np.all(letter_occurance_array[:, mask_list] == np.array(check_values)[None, :], axis = -1))
+                return [n_rel_words]
+            else:
+                el = els.pop()
+                mask_list.append(el)
 
-            return get_possibilities
+                return get_possibilities(els.copy(), mask_list.copy(), check_values + [0], letter_occurance_array) + get_possibilities(els.copy(), mask_list.copy(), check_values + [1], letter_occurance_array)
         # def get_probs(letter_probs, n_words):
         #     out_probs = np.zeros((2 ** len(letter_probs)))
         #     for i in range(letter_probs):
         #         out_probs[]
         nonlocal dictionary_array, encoding, letter_occurance_array
+
+        if len(letters_in_word) == 0 and len(letters_not_in_word) == 0:
+            return 'aesir'
 
         keep_indexes = np.ones((dictionary_array.shape[0]), bool)
         for l in encoding.encode(letters_not_in_word):
@@ -87,30 +89,15 @@ def guesser_generator(dictionary_array, encoding):
         dictionary_array = dictionary_array[keep_indexes]
         letter_occurance_array = letter_occurance_array[keep_indexes]
         # Number of words each letter occurs in
-        letter_occurance_totals = np.sum(letter_occurance_array, axis = 0)
 
-        n_words = dictionary_array.shape[0]
+        scores = []
+        for i, word in enumerate(letter_occurance_array):
+            els = list(np.nonzero(word)[0])
+            possibility_counts = np.array(get_possibilities(els, [], [], letter_occurance_array))
+            score = np.sum(possibility_counts ** 2)
+            scores.append(score)
 
-        letter_in_word_scores = letter_occurance_totals * (n_words - letter_occurance_totals)
-
-        letter_placed_totals = np.sum(dictionary_array, axis = 0)
-
-        letter_placed_scores = letter_placed_totals * (n_words - letter_placed_totals) 
-
-        dictionary_scores = np.sum(letter_occurance_array * letter_in_word_scores[None, :], axis = -1) \
-            + np.sum(dictionary_array * letter_placed_scores[None, :, :], axis = (1, 2))
-
-        for word in dictionary_array:
-            possibilities = []
-            letter_probs = letter_occurance_totals[np.nonzero(word)[0]]
-            probs = np.array
-            keep_indexes = np.ones((dictionary_array.shape[0]), bool)
-            for i, letter in enumerate(word):
-                prob = letter_occurance_totals[i] 
-
-
-
-        return encoding.decode_onehot(dictionary_array[np.argmax(dictionary_scores)])
+        return encoding.decode_onehot(dictionary_array[np.argmin(scores)])
     return guesser
 
 
@@ -125,7 +112,7 @@ if __name__ == '__main__':
 
     wordle_game = WordleGame(seed = 0)
 
-    for i in range(1000):
+    for i in range(100):
         guesser = guesser_generator(dictionary_array, encoding)
 
         res = wordle_game.sim(guesser)
