@@ -10,7 +10,7 @@ class WordleGame:
             np.random.seed = seed
 
         # Load in the dictionary
-        with open('wordle_dictionary.json', 'r') as fd:
+        with open('wordle_dictionary_short.json', 'r') as fd:
             self.dictionary = json.load(fd)
         self.word_list = list(self.dictionary.keys())
 
@@ -32,7 +32,7 @@ class WordleGame:
         for i in range(WordleGame.N_GUESSES):
             guess = guesser(letters_not_in_word, letters_in_word, letters_in_position)
             # print(guess)
-            assert guess in self.word_list
+            # assert guess in self.word_list and guess
 
             if guess == word:
                 # Return number of guesses
@@ -49,8 +49,10 @@ class WordleGame:
         else:
             return None
 
-def guesser_generator(dictionary_array, encoding):
+def guesser_generator(dictionary_array_long, dictionary_array, encoding):
     letter_occurance_array = np.max(dictionary_array, axis = 1)
+    letter_occurance_array_long = np.max(dictionary_array_long, axis = 1)
+    guess_number = 0
     def guesser(letters_not_in_word, letters_in_word, letters_in_position):
         def get_possibilities(els, mask_list, check_values, letter_occurance_array):
             if len(els) == 0:
@@ -65,9 +67,10 @@ def guesser_generator(dictionary_array, encoding):
         #     out_probs = np.zeros((2 ** len(letter_probs)))
         #     for i in range(letter_probs):
         #         out_probs[]
-        nonlocal dictionary_array, encoding, letter_occurance_array
+        nonlocal dictionary_array, dictionary_array_long, encoding, letter_occurance_array, letter_occurance_array_long, guess_number
 
-        if len(letters_in_word) == 0 and len(letters_not_in_word) == 0:
+        if guess_number == 0:
+            guess_number += 1
             return 'aesir'
 
         keep_indexes = np.ones((dictionary_array.shape[0]), bool)
@@ -91,20 +94,40 @@ def guesser_generator(dictionary_array, encoding):
         # Number of words each letter occurs in
 
         scores = []
-        for i, word in enumerate(letter_occurance_array):
+
+        use_long = False
+        for i, word in enumerate(letter_occurance_array_long if use_long else letter_occurance_array):
             els = list(np.nonzero(word)[0])
             possibility_counts = np.array(get_possibilities(els, [], [], letter_occurance_array))
             score = np.sum(possibility_counts ** 2)
             scores.append(score)
 
-        return encoding.decode_onehot(dictionary_array[np.argmin(scores)])
+        guess_number += 1
+        return encoding.decode_onehot((dictionary_array_long if use_long else dictionary_array)[np.argmin(scores)])
     return guesser
 
 
 
 if __name__ == '__main__':
-    with open('wordle_dictionary_array.p', 'rb') as fd:
+    with open('wordle_dictionary_array_short.p', 'rb') as fd:
         dictionary_array = pickle.load(fd)
+
+    with open('wordle_dictionary_array.p', 'rb') as fd:
+        dictionary_array_long = pickle.load(fd)
+
+    # Remove words from long dictionary with repeated letters
+    dictionary_array_long = dictionary_array_long[np.sum(np.max(dictionary_array_long, axis = 1), axis = -1) == 5]
+    # words = [word for word in dictionary_array_long]
+    # outwords = []
+
+    # while len(words) > 0:
+    #     j = 0
+    #     while j < len(words) - 1:
+    #         if np.all(words[j] == words[-1]):
+    #             words.pop(j)
+    #         else:
+    #             j += 1
+    #     outwords.append(words.pop())
 
     alphabet = 'abcdefghijklmnopqrstuvwxyz'
     encoding = WordEncoding(alphabet)
@@ -112,8 +135,8 @@ if __name__ == '__main__':
 
     wordle_game = WordleGame(seed = 0)
 
-    for i in range(100):
-        guesser = guesser_generator(dictionary_array, encoding)
+    for i in range(50):
+        guesser = guesser_generator(dictionary_array_long, dictionary_array, encoding)
 
         res = wordle_game.sim(guesser)
         results.append(res)
